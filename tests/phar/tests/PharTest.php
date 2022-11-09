@@ -2,17 +2,20 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Zalas\PHPUnit\Globals\Attributes\Env;
+use Zalas\PHPUnit\Globals\Attributes\PutEnv;
+use Zalas\PHPUnit\Globals\Attributes\Server;
 
 class PharTest extends TestCase
 {
-    /**
-     * @env APP_ENV=test_foo
-     * @server APP_DEBUG=1
-     */
+    #[Env('APP_ENV', 'test_foo')]
+    #[Server('APP_DEBUG', '1')]
+    #[PutEnv('APP_HOST', 'localhost')]
     public function test_it_reads_global_variables_from_method_annotations()
     {
         $this->assertArraySubset(['APP_ENV' => 'test_foo'], $_ENV);
         $this->assertArraySubset(['APP_DEBUG' => '1'], $_SERVER);
+        $this->assertSame('localhost', \getenv('APP_HOST'));
     }
 
     /**

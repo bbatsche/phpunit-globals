@@ -1,64 +1,48 @@
-IS_PHP73:=$(shell php -r 'echo (int)version_compare(PHP_VERSION, "7.4", "<");')
-
 default: build
 
-build: install test
+build: test
 .PHONY: build
-
-install:
-	composer install
-.PHONY: install
 
 update:
 	composer update
 .PHONY: update
 
 update-min:
-	composer update --prefer-stable --prefer-lowest
+	composer update --prefer-lowest
 .PHONY: update-min
 
 update-no-dev:
-	composer update --prefer-stable --no-dev
+	composer update --no-dev
 .PHONY: update-no-dev
 
-test: vendor cs phpunit
+test: cs phpunit
 .PHONY: test
 
 test-min: update-min cs phpunit
 .PHONY: test-min
 
-test-package: test-package-tools
-	cd tests/phar && ./tools/phpunit
+test-package: vendor/bin/phpunit build/zalas-phpunit-globals-extension.phar
+	vendor/bin/phpunit -c tests/phar/phpunit.xml
 .PHONY: test-package
 
-ifeq ($(IS_PHP73),1)
-cs:
-else
 cs: tools/php-cs-fixer
-	tools/php-cs-fixer --dry-run --allow-risky=yes --no-interaction --ansi fix
-endif
+	tools/php-cs-fixer --dry-run --no-interaction --ansi -v --diff fix
 .PHONY: cs
 
-ifeq ($(IS_PHP73),1)
-cs-fix:
-else
 cs-fix: tools/php-cs-fixer
-	tools/php-cs-fixer --allow-risky=yes --no-interaction --ansi fix
-endif
+	tools/php-cs-fixer --no-interaction --ansi fix
 .PHONY: cs-fix
 
-phpunit: tools/phpunit
-	tools/phpunit
+phpunit: vendor/bin/phpunit
+	vendor/bin/phpunit
 .PHONY: phpunit
 
 clean:
-	rm -rf build
-	rm -rf vendor
+	rm -rf composer.lock build vendor
 	find tools -not -path '*/\.*' -type f -delete
-	find tests/phar/tools -not -path '*/\.*' -type f -delete
 .PHONY: clean
 
-build/zalas-phpunit-globals-extension.phar: tools/box
+build/zalas-phpunit-globals-extension.phar: tools/box box.json.dist $(wildcard src/*.php) $(wildcard src/**/*.php)
 	$(eval VERSION=$(shell git describe --abbrev=0 --tags 2> /dev/null | sed -e 's/^v//' || echo 'dev'))
 	@rm -rf build/phar && mkdir -p build/phar
 
@@ -67,7 +51,7 @@ build/zalas-phpunit-globals-extension.phar: tools/box
 
 	cd build/phar && \
 	  composer remove phpunit/phpunit --no-update && \
-	  composer config platform.php 7.3 && \
+	  composer config platform.php 8.1 && \
 	  composer update --no-dev -o -a
 
 	tools/box compile
@@ -77,27 +61,13 @@ build/zalas-phpunit-globals-extension.phar: tools/box
 package: build/zalas-phpunit-globals-extension.phar
 .PHONY: package
 
-vendor: install
+vendor: composer.json $(wildcard composer.lock)
+	composer install
 
-vendor/bin/phpunit: install
-
-tools: tools/php-cs-fixer tools/phpunit tools/box
-.PHONY: tools
-
-tools/phpunit: vendor/bin/phpunit
-	ln -sf ../vendor/bin/phpunit tools/phpunit
+vendor/bin/phpunit: vendor
 
 tools/php-cs-fixer:
 	curl -Ls http://cs.symfony.com/download/php-cs-fixer-v3.phar -o tools/php-cs-fixer && chmod +x tools/php-cs-fixer
 
 tools/box:
-	curl -Ls https://github.com/humbug/box/releases/download/3.13.0/box.phar -o tools/box && chmod +x tools/box
-
-test-package-tools: tests/phar/tools/phpunit tests/phar/tools/phpunit.d/zalas-phpunit-globals-extension.phar
-.PHONY: test-package-tools
-
-tests/phar/tools/phpunit:
-	curl -Ls https://phar.phpunit.de/phpunit-9.5.10.phar -o tests/phar/tools/phpunit && chmod +x tests/phar/tools/phpunit
-
-tests/phar/tools/phpunit.d/zalas-phpunit-globals-extension.phar: build/zalas-phpunit-globals-extension.phar
-	cp build/zalas-phpunit-globals-extension.phar tests/phar/tools/phpunit.d/zalas-phpunit-globals-extension.phar
+	curl -Ls https://github.com/humbug/box/releases/download/4.1.0/box.phar -o tools/box && chmod +x tools/box
