@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 namespace Zalas\PHPUnit\Globals\Tests;
 
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
 /**
- * A test case with no global variable annotations.
+ * A test case with no global variable attributes.
  */
-class AnnotationExtensionNoAnnotationsTest extends TestCase
+class AttributeExtensionNoAttributesTest extends TestCase
 {
     public function test_it_backups_the_state()
     {
@@ -21,9 +22,7 @@ class AnnotationExtensionNoAnnotationsTest extends TestCase
         $this->assertArrayHasKey('BAR', $_SERVER);
     }
 
-    /**
-     * @depends test_it_backups_the_state
-     */
+    #[Depends('test_it_backups_the_state')]
     public function test_it_cleans_up_after_itself()
     {
         $this->assertArrayNotHasKey('FOO', $_ENV);

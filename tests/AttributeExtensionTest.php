@@ -3,29 +3,23 @@ declare(strict_types=1);
 
 namespace Zalas\PHPUnit\Globals\Tests;
 
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Runner\AfterTestHook;
-use PHPUnit\Runner\BeforeTestHook;
-use Zalas\PHPUnit\Globals\AnnotationExtension;
+use Zalas\PHPUnit\Globals\Attributes\Env;
+use Zalas\PHPUnit\Globals\Attributes\PutEnv;
+use Zalas\PHPUnit\Globals\Attributes\Server;
+use Zalas\PHPUnit\Globals\Attributes\UnsetEnv;
+use Zalas\PHPUnit\Globals\Attributes\UnsetGetEnv;
+use Zalas\PHPUnit\Globals\Attributes\UnsetServer;
 
-/**
- * @env APP_ENV=test
- * @server APP_DEBUG=0
- * @putenv APP_HOST=localhost
- */
-class AnnotationExtensionTest extends TestCase
+#[Env('APP_ENV', 'test')]
+#[Server('APP_DEBUG', '0')]
+#[PutEnv('APP_HOST', 'localhost')]
+class AttributeExtensionTest extends TestCase
 {
-    public function test_it_is_a_test_hook()
-    {
-        $this->assertInstanceOf(BeforeTestHook::class, new AnnotationExtension());
-        $this->assertInstanceOf(AfterTestHook::class, new AnnotationExtension());
-    }
-
-    /**
-     * @env APP_ENV=test_foo
-     * @server APP_DEBUG=1
-     * @putenv APP_HOST=dev
-     */
+    #[Env('APP_ENV', 'test_foo')]
+    #[Server('APP_DEBUG', '1')]
+    #[PutEnv('APP_HOST', 'dev')]
     public function test_it_reads_global_variables_from_method_annotations()
     {
         $this->assertArraySubset(['APP_ENV' => 'test_foo'], $_ENV);
@@ -40,11 +34,9 @@ class AnnotationExtensionTest extends TestCase
         $this->assertArraySubset(['APP_HOST' => 'localhost'], \getenv());
     }
 
-    /**
-     * @env FOO=foo
-     * @server BAR=bar
-     * @putenv BAZ=baz
-     */
+    #[Env('FOO', 'foo')]
+    #[Server('BAR', 'bar')]
+    #[PutEnv('BAZ', 'baz')]
     public function test_it_reads_additional_global_variables_from_methods()
     {
         $this->assertArraySubset(['APP_ENV' => 'test'], $_ENV);
@@ -55,14 +47,12 @@ class AnnotationExtensionTest extends TestCase
         $this->assertArraySubset(['BAZ' => 'baz'], \getenv());
     }
 
-    /**
-     * @env APP_ENV=test_foo
-     * @env APP_ENV=test_foo_bar
-     * @server APP_DEBUG=1
-     * @server APP_DEBUG=2
-     * @putenv APP_HOST=host1
-     * @putenv APP_HOST=host2
-     */
+    #[Env('APP_ENV', 'test_foo')]
+    #[Env('APP_ENV', 'test_foo_bar')]
+    #[Server('APP_DEBUG', '1')]
+    #[Server('APP_DEBUG', '2')]
+    #[PutEnv('APP_HOST', 'host1')]
+    #[PutEnv('APP_HOST', 'host2')]
     public function test_it_reads_the_latest_var_defined()
     {
         $this->assertArraySubset(['APP_ENV' => 'test_foo_bar'], $_ENV);
@@ -70,23 +60,9 @@ class AnnotationExtensionTest extends TestCase
         $this->assertArraySubset(['APP_HOST' => 'host2'], \getenv());
     }
 
-    /**
-     * @env APP_ENV
-     * @server APP_DEBUG
-     * @putenv APP_HOST
-     */
-    public function test_it_reads_empty_vars()
-    {
-        $this->assertArraySubset(['APP_ENV' => ''], $_ENV);
-        $this->assertArraySubset(['APP_DEBUG' => ''], $_SERVER);
-        $this->assertArraySubset(['APP_HOST' => ''], \getenv());
-    }
-
-    /**
-     * @unset-env APP_ENV
-     * @unset-server APP_DEBUG
-     * @unset-getenv APP_HOST
-     */
+    #[UnsetEnv('APP_ENV')]
+    #[UnsetServer('APP_DEBUG')]
+    #[UnsetGetEnv('APP_HOST')]
     public function test_it_unsets_vars()
     {
         $this->assertArrayNotHasKey('APP_ENV', $_ENV);
@@ -109,9 +85,7 @@ class AnnotationExtensionTest extends TestCase
         $this->assertSame('foobar', \getenv('USER'));
     }
 
-    /**
-     * @depends test_it_backups_the_state
-     */
+    #[Depends('test_it_backups_the_state')]
     public function test_it_cleans_up_after_itself()
     {
         $this->assertArrayNotHasKey('FOO', $_ENV);
