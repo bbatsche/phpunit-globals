@@ -1,14 +1,14 @@
 # PHPUnit Globals
 
-Allows to use annotations to define global variables in PHPUnit test cases.
+Allows to use attributes to define global variables in PHPUnit test cases.
 
-[![Build Status](https://travis-ci.org/jakzal/phpunit-globals.svg?branch=master)](https://travis-ci.org/jakzal/phpunit-globals)
+[![Build Status](https://github.com/jakzal/phpunit-globals/actions/workflows/build.yml/badge.svg)](https://github.com/jakzal/phpunit-globals/actions/workflows/build.yml)
 
-Supported annotations:
+Supported attributes:
 
- * `@env` for `$_ENV`
- * `@server` for `$_SERVER`
- * `@putenv` for [`putenv()`](http://php.net/putenv)
+ * `Zalas\PHPUnit\Globals\Attributes\Env` for `$_ENV`
+ * `Zalas\PHPUnit\Globals\Attributes\Server` for `$_SERVER`
+ * `Zalas\PHPUnit\Globals\Attributes\PutEnv` for [`putenv()`](http://php.net/putenv)
 
 Global variables are set before each test case is executed,
 and brought to the original state after each test case has finished.
@@ -31,7 +31,7 @@ Put the extension in your PHPUnit extensions directory.
 Remember to instruct PHPUnit to load extensions in your `phpunit.xml`:
 
 ```xml
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.0/phpunit.xsd"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10/phpunit.xsd"
          extensionsDirectory="tools/phpunit.d"
 >
 </phpunit>
@@ -39,44 +39,40 @@ Remember to instruct PHPUnit to load extensions in your `phpunit.xml`:
 
 ## Usage
 
-Enable the globals annotation extension in your PHPUnit configuration:
+Enable the globals attribute extension in your PHPUnit configuration:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.0/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
-         verbose="true"
-         colors="true">
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
+         bootstrap="vendor/autoload.php">
 
     <!-- ... -->
 
     <extensions>
-        <extension class="Zalas\PHPUnit\Globals\AnnotationExtension" />
+        <bootstrap class="Zalas\PHPUnit\Globals\AttributeExtension" />
     </extensions>
-
 </phpunit>
 ```
 
-Make sure the `AnnotationExtension` is registered before any other extensions that might depend on global variables.
+Make sure the `AttributeExtension` is registered before any other extensions that might depend on global variables.
 
-Global variables can now be defined in annotations:
+Global variables can now be defined in attributes:
 
 ```php
 use PHPUnit\Framework\TestCase;
+use Zalas\PHPUnit\Globals\Attributes\Env;
+use Zalas\PHPUnit\Globals\Attributes\Server;
+use Zalas\PHPUnit\Globals\Attributes\PutEnv;
 
-/**
- * @env FOO=bar
- */
+#[Env('FOO', 'bar')]
 class ExampleTest extends TestCase
 {
-    /**
-     * @env APP_ENV=foo
-     * @env APP_DEBUG=0
-     * @server APP_ENV=bar
-     * @server APP_DEBUG=1
-     * @putenv APP_HOST=localhost
-     */
+    #[Env('APP_ENV', 'foo')]
+    #[Env('APP_DEBUG', '0')]
+    #[Server('APP_ENV', 'bar')]
+    #[Server('APP_DEBUG', '1')]
+    #[PutEnv('APP_HOST', 'localhost')]
     public function test_global_variables()
     {
         $this->assertSame('bar', $_ENV['FOO']);
@@ -93,14 +89,15 @@ It's also possible to mark a variable as _unset_ so it will not be present in an
 
 ```php
 use PHPUnit\Framework\TestCase;
+use Zalas\PHPUnit\Globals\Attributes\UnsetEnv;
+use Zalas\PHPUnit\Globals\Attributes\UnsetServer;
+use Zalas\PHPUnit\Globals\Attributes\UnsetGetEnv;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * @unset-env APP_ENV
-     * @unset-server APP_DEBUG
-     * @unset-getenv APP_HOST
-     */
+    #[UnsetEnv('APP_ENV')]
+    #[UnsetServer('APP_DEBUG')]
+    #[UnsetGetEnv('APP_HOST')]
     public function test_global_variables()
     {
         $this->assertArrayNotHasKey('APP_ENV', $_ENV);
@@ -110,22 +107,22 @@ class ExampleTest extends TestCase
 }
 ```
 
-## Updating to PHPUnit 8
+## Updating to PHPUnit 10
 
-When updating from a previous version of this extension that used to work with PHPUnit older than v8,
-replace the listener registration in `phpunit.xml`:
-
-```xml
-    <listeners>
-        <listener class="Zalas\PHPUnit\Globals\AnnotationListener" />
-    </listeners>
-```
-
-with the extension registration:
+When updating from a previous version of this extension that used to work with PHPUnit older than v10,
+replace the `<extension />` registration in `phpunit.xml`:
 
 ```xml
     <extensions>
-        <extension class="Zalas\PHPUnit\Globals\AnnotationExtension" />
+        <extension class="Zalas\PHPUnit\Globals\AttributeExtension" />
+    </extensions>
+```
+
+with the `<bootstrap />` registration:
+
+```xml
+    <extensions>
+        <bootstrap class="Zalas\PHPUnit\Globals\AttributeExtension" />
     </extensions>
 ```
 
